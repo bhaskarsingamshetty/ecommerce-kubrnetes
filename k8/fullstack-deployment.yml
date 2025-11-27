@@ -1,0 +1,130 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fullstack-app
+---
+# ===========================
+# MySQL Deployment & Service
+# ===========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  namespace: fullstack-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: password     #💀 change to your password(same as application.properties)
+            - name: MYSQL_DATABASE
+              value: ecommerce #💀 change to your password(same as application.properties)
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  namespace: fullstack-app
+spec:
+  selector:
+    app: mysql
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP
+---
+# ===========================
+# Backend Deployment & Service
+# ===========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: fullstack-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: bhaskar23406/ecommerce-k8-backend:latest #💀 change to image name you want
+          ports:
+            - containerPort: 2000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: fullstack-app
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 2000
+      targetPort: 2000
+      nodePort: 31000        #💀 change to port on which you want to run your backend (same as you kept in config/.env file)
+  type: NodePort
+---
+# ===========================
+# Frontend Deployment & Service
+# ===========================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-deployment
+  namespace: fullstack-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: bhaskar23406/ecommerce-k8-frontend:latest  #💀 change to image name you want
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: fullstack-app
+spec:
+  selector:
+    app: frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 31001        #💀 change to port on which you want to run your frontend (range 30000–32767)
+  type: NodePort
